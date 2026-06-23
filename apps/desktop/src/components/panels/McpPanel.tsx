@@ -1,92 +1,66 @@
 import { useAppStore } from '../../store/app-store.js';
-import { useTranslation, useTheme, Panel, PanelHeader, EmptyState, ScrollList, Badge, IconButton } from '@avhos/ui';
-
-const STATUS_COLORS: Record<string, string> = {
-  connected: '#3fb950',
-  disconnected: '#6e7681',
-  error: '#f85149',
-  connecting: '#d29922',
-};
+import { useTranslation, useTheme, Panel, PanelHeader } from '@avhos/ui';
 
 export function McpPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { mcpServers } = useAppStore();
+  const { workspaceRoot, activeTabId, openTabs } = useAppStore();
+
+  const activeTab = openTabs.find((tab) => tab.id === activeTabId);
+  const projectName = workspaceRoot
+    ? workspaceRoot.split(/[\\/]/).pop()
+    : null;
 
   return (
     <Panel>
-      <PanelHeader
-        title={t('mcp.title')}
-        actions={<IconButton title={t('mcp.addServer')}>+</IconButton>}
-      />
-      {mcpServers.length === 0 ? (
-        <EmptyState message={t('mcp.empty')} />
-      ) : (
-        <ScrollList>
-          {mcpServers.map((server) => (
-            <div
-              key={server.id}
-              style={{
-                padding: '10px 12px',
-                borderBottom: `1px solid ${theme.colors.border}`,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ color: theme.colors.textPrimary, fontSize: 'var(--font-base)', fontWeight: 500 }}>
-                  {server.name}
-                </span>
-                <Badge color={STATUS_COLORS[server.status]}>
-                  {t(`mcp.status.${server.status}`)}
-                </Badge>
-              </div>
-              <div style={{ color: theme.colors.textSecondary, fontSize: 'var(--font-sm)', marginBottom: '4px' }}>
-                {server.command} {server.args.join(' ')}
-              </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <span style={{ color: theme.colors.textMuted, fontSize: 'var(--font-xs)' }}>
-                  {server.transport}
-                </span>
-                {server.status === 'disconnected' ? (
-                  <button
-                    style={{
-                      marginLeft: 'auto',
-                      background: 'transparent',
-                      border: `1px solid ${theme.colors.border}`,
-                      color: theme.colors.accent,
-                      borderRadius: '3px',
-                      padding: '2px 8px',
-                      cursor: 'pointer',
-                      fontSize: 'var(--font-xs)',
-                    }}
-                  >
-                    {t('mcp.connect')}
-                  </button>
-                ) : server.status === 'connected' ? (
-                  <button
-                    style={{
-                      marginLeft: 'auto',
-                      background: 'transparent',
-                      border: `1px solid ${theme.colors.border}`,
-                      color: theme.colors.danger,
-                      borderRadius: '3px',
-                      padding: '2px 8px',
-                      cursor: 'pointer',
-                      fontSize: 'var(--font-xs)',
-                    }}
-                  >
-                    {t('mcp.disconnect')}
-                  </button>
-                ) : null}
-              </div>
-              <div style={{ marginTop: '8px', display: 'flex', gap: '12px', color: theme.colors.textMuted, fontSize: 'var(--font-xs)' }}>
-                <span>{t('mcp.tools')}: 0</span>
-                <span>{t('mcp.prompts')}: 0</span>
-                <span>{t('mcp.resources')}: 0</span>
-              </div>
-            </div>
-          ))}
-        </ScrollList>
-      )}
+      <PanelHeader title={t('mcp.title')} />
+      <div
+        style={{
+          padding: '24px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          height: '100%',
+        }}
+      >
+        <div style={{ fontSize: 'var(--font-base)', color: theme.colors.textPrimary, fontWeight: 600 }}>
+          MCP no disponible
+        </div>
+        <div style={{ fontSize: 'var(--font-sm)', color: theme.colors.textMuted, lineHeight: 1.6 }}>
+          El Model Context Protocol (MCP) permite conectar servidores de
+          herramientas externas. Requiere un cliente MCP integrado que
+          gestione conexiones, descubrimiento de herramientas y ejecución.
+          Aún no está implementado.
+        </div>
+        <div
+          style={{
+            padding: '12px',
+            background: theme.colors.bgTertiary,
+            borderRadius: '6px',
+            border: `1px solid ${theme.colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: theme.colors.textSecondary }}>
+            Contexto actual
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {projectName ? `Proyecto: ${projectName}` : 'Sin proyecto abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {activeTab ? `Archivo activo: ${activeTab.filePath.split(/[\\/]/).pop()}` : 'Ningún archivo abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {`Pestañas abiertas: ${openTabs.length}`}
+          </div>
+        </div>
+        <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted, fontStyle: 'italic' }}>
+          Cuando el cliente MCP esté disponible, podrás conectar servidores
+          de herramientas y exponerlas al agente IA.
+        </div>
+      </div>
     </Panel>
   );
 }

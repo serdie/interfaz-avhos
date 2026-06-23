@@ -1,60 +1,65 @@
 import { useAppStore } from '../../store/app-store.js';
-import { useTranslation, useTheme, Panel, PanelHeader, ScrollList } from '@avhos/ui';
+import { useTranslation, useTheme, Panel, PanelHeader } from '@avhos/ui';
 
 export function SettingsPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { settings } = useAppStore();
+  const { workspaceRoot, activeTabId, openTabs } = useAppStore();
 
-  const categories = ['appearance', 'editor', 'terminal', 'models', 'mcp', 'agent', 'general'] as const;
+  const activeTab = openTabs.find((tab) => tab.id === activeTabId);
+  const projectName = workspaceRoot
+    ? workspaceRoot.split(/[\\/]/).pop()
+    : null;
 
   return (
     <Panel>
       <PanelHeader title={t('settings.title')} />
-      <ScrollList>
-        {categories.map((cat) => {
-          const catSettings = settings.filter((s) => s.category === cat);
-          if (catSettings.length === 0) return null;
-          return (
-            <div key={cat} style={{ borderBottom: `1px solid ${theme.colors.border}` }}>
-              <div
-                style={{
-                  padding: '8px 12px',
-                  background: theme.colors.bgTertiary,
-                  fontSize: 'var(--font-sm)',
-                  fontWeight: 600,
-                  color: theme.colors.textPrimary,
-                }}
-              >
-                {t(`settings.${cat}`)}
-              </div>
-              {catSettings.map((setting) => (
-                <div
-                  key={setting.id}
-                  style={{
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ color: theme.colors.textPrimary, fontSize: 'var(--font-base)' }}>
-                      {setting.description}
-                    </div>
-                    <div style={{ color: theme.colors.textMuted, fontSize: 'var(--font-xs)' }}>
-                      {setting.key}
-                    </div>
-                  </div>
-                  <div style={{ color: theme.colors.accent, fontSize: 'var(--font-sm)' }}>
-                    {String(setting.value)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </ScrollList>
+      <div
+        style={{
+          padding: '24px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          height: '100%',
+        }}
+      >
+        <div style={{ fontSize: 'var(--font-base)', color: theme.colors.textPrimary, fontWeight: 600 }}>
+          Configuración no disponible
+        </div>
+        <div style={{ fontSize: 'var(--font-sm)', color: theme.colors.textMuted, lineHeight: 1.6 }}>
+          La configuración persistente de AVHOS (apariencia, editor, terminal,
+          modelos, MCP, agente) requiere un backend de ajustes que guarde
+          preferencias entre sesiones. Aún no está implementado.
+        </div>
+        <div
+          style={{
+            padding: '12px',
+            background: theme.colors.bgTertiary,
+            borderRadius: '6px',
+            border: `1px solid ${theme.colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: theme.colors.textSecondary }}>
+            Contexto actual
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {projectName ? `Proyecto: ${projectName}` : 'Sin proyecto abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {activeTab ? `Archivo activo: ${activeTab.filePath.split(/[\\/]/).pop()}` : 'Ningún archivo abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {`Pestañas abiertas: ${openTabs.length}`}
+          </div>
+        </div>
+        <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted, fontStyle: 'italic' }}>
+          Cuando el backend de ajustes esté disponible, podrás configurar
+          tema, fuente, atajos de teclado y preferencias del agente.
+        </div>
+      </div>
     </Panel>
   );
 }

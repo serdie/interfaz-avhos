@@ -6,14 +6,6 @@ import { injectGlobalCSS } from './styles/global.css.js';
 import { WorkspaceService } from './services/workspace-service.js';
 import { setWorkspaceService } from './services/service-registry.js';
 import { createFsAdapter } from './services/fs-adapter-factory.js';
-import {
-  createSeedWorkspace,
-  createSeedSkills,
-  createSeedMcpServers,
-  createSeedProviders,
-  createSeedProfiles,
-  createSeedSettings,
-} from './data/seed.js';
 import { IDELayout } from './components/IDELayout.js';
 
 function AppInner() {
@@ -45,20 +37,6 @@ function AppInner() {
         store.getState().setTreeLoading(false);
         store.getState().pushActivity('workspace', 'error', `Error al abrir proyecto: ${err instanceof Error ? err.message : 'desconocido'}`);
       }
-
-      // Load seed data for non-explorer panels (still mock-backed)
-      const ws = createSeedWorkspace();
-      store.getState().setWorkspace(ws);
-      store.getState().setSkills(createSeedSkills());
-      store.getState().setMcpServers(createSeedMcpServers());
-      store.getState().setProviders(createSeedProviders());
-      store.getState().setProfiles(createSeedProfiles());
-      store.getState().setSettings(createSeedSettings());
-
-      // Set default profile
-      const profiles = createSeedProfiles();
-      const defaultProfile = profiles.find((p) => p.isDefault);
-      if (defaultProfile) store.getState().setActiveProfile(defaultProfile.id);
 
       setReady(true);
     });
