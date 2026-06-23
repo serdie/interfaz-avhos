@@ -54,6 +54,12 @@ export interface ActivityEntry {
   message: string;
 }
 
+export interface ChatMsg {
+  id: string;
+  role: 'user' | 'assistant' | 'error';
+  content: string;
+}
+
 /** Estado de carga del contenido de un archivo para una pestaña abierta. */
 export interface TabContentState {
   content: string;
@@ -131,6 +137,11 @@ interface AppStore {
   projectInventory: string[];
   inventoryLoading: boolean;
 
+  // Chat state (survives panel switches)
+  chatMessages: ChatMsg[];
+  chatInput: string;
+  chatLoading: boolean;
+
   // Actions
   setWorkspace: (ws: Workspace) => void;
   setProjects: (projects: Project[]) => void;
@@ -170,6 +181,12 @@ interface AppStore {
   setActiveModel: (model: string | null) => void;
   setProjectInventory: (files: string[]) => void;
   setInventoryLoading: (loading: boolean) => void;
+  setChatMessages: (msgs: ChatMsg[]) => void;
+  addChatMessage: (msg: ChatMsg) => void;
+  updateChatMessage: (id: string, updater: (msg: ChatMsg) => ChatMsg) => void;
+  clearChatMessages: () => void;
+  setChatInput: (input: string) => void;
+  setChatLoading: (loading: boolean) => void;
   pushActivity: (category: ActivityCategory, level: ActivityLevel, message: string) => void;
   clearActivity: () => void;
 }
@@ -201,6 +218,9 @@ export const useAppStore = create<AppStore>((set) => ({
   activeModel: null,
   projectInventory: [],
   inventoryLoading: false,
+  chatMessages: [],
+  chatInput: '',
+  chatLoading: false,
   activityLog: [],
   fileTree: [],
   treeLoading: false,
@@ -293,6 +313,14 @@ export const useAppStore = create<AppStore>((set) => ({
   setActiveModel: (model) => set({ activeModel: model }),
   setProjectInventory: (files) => set({ projectInventory: files }),
   setInventoryLoading: (loading) => set({ inventoryLoading: loading }),
+  setChatMessages: (msgs) => set({ chatMessages: msgs }),
+  addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
+  updateChatMessage: (id, updater) => set((s) => ({
+    chatMessages: s.chatMessages.map((m) => m.id === id ? updater(m) : m),
+  })),
+  clearChatMessages: () => set({ chatMessages: [] }),
+  setChatInput: (input) => set({ chatInput: input }),
+  setChatLoading: (loading) => set({ chatLoading: loading }),
   pushActivity: (category, level, message) =>
     set((s) => ({
       activityLog: [

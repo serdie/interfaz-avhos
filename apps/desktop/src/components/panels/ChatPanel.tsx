@@ -1,21 +1,19 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/app-store.js';
+import type { ChatMsg } from '../../store/app-store.js';
 import { useTranslation, useTheme, Panel, PanelHeader, ScrollList, Badge, IconButton } from '@avhos/ui';
 import { streamChat } from '../../services/ollama-service.js';
-
-interface ChatMsg {
-  id: string;
-  role: 'user' | 'assistant' | 'error';
-  content: string;
-}
 
 export function ChatPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs, tabContents, projectInventory, inventoryLoading } = useAppStore();
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const {
+    ollamaStatus, activeModel, ollamaModels, workspaceRoot,
+    activeTabId, openTabs, tabContents, projectInventory, inventoryLoading,
+    chatMessages: messages, chatInput: input, chatLoading: loading,
+    setChatInput: setInput, setChatLoading: setLoading,
+    setChatMessages, updateChatMessage, clearChatMessages,
+  } = useAppStore();
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +51,7 @@ export function ChatPanel() {
   };
 
   const handleClear = () => {
-    setMessages([]);
+    clearChatMessages();
   };
 
   const buildSystemPrompt = (): string => {
@@ -103,7 +101,7 @@ export function ChatPanel() {
     const userMsg: ChatMsg = { id: crypto.randomUUID(), role: 'user', content };
     const assistantId = crypto.randomUUID();
     const assistantMsg: ChatMsg = { id: assistantId, role: 'assistant', content: '' };
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setChatMessages([...messages, userMsg, assistantMsg]);
 
     const history: { role: 'system' | 'user' | 'assistant'; content: string }[] =
       [...messages, userMsg].map((m) => ({
@@ -121,31 +119,17 @@ export function ChatPanel() {
 
     try {
       await streamChat(activeModel, history, (delta) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: m.content + delta } : m,
-          ),
-        );
+        updateChatMessage(assistantId, (m) => ({ ...m, content: m.content + delta }));
       }, controller.signal);
       useAppStore.getState().pushActivity('editor', 'info', `Chat: respuesta de ${activeModel}`);
     } catch (err) {
       if (controller.signal.aborted) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId && m.content === ''
-              ? { ...m, role: 'error', content: 'Generación cancelada' }
-              : m,
-          ),
+        updateChatMessage(assistantId, (m) =>
+          m.content === '' ? { ...m, role: 'error', content: 'Generación cancelada' } : m,
         );
       } else {
         const msg = err instanceof Error ? err.message : 'Error desconocido';
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, role: 'error', content: `Error: ${msg}` }
-              : m,
-          ),
-        );
+        updateChatMessage(assistantId, (m) => ({ ...m, role: 'error', content: `Error: ${msg}` }));
         useAppStore.getState().pushActivity('editor', 'error', `Chat: ${msg}`);
       }
     } finally {
