@@ -21,6 +21,8 @@ body {
 input, textarea { user-select: text; }
 button { font-family: inherit; }
 .avhos-panel { display: flex; flex-direction: column; height: 100%; background: var(--bg-primary); }
+.avhos-panel * { user-select: text; }
+button, .avhos-panel-header, .avhos-activitybar { user-select: none; }
 `;
 
 const styleId = 'avhos-global-styles';

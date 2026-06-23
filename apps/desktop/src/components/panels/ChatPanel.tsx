@@ -12,7 +12,7 @@ interface ChatMsg {
 export function ChatPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs } = useAppStore();
+  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs, tabContents } = useAppStore();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,9 +66,14 @@ export function ChatPanel() {
       }));
 
     if (activeTab) {
+      const tabContent = tabContents[activeTab.id];
+      const fileContent = tabContent?.content ?? '';
+      const truncated = fileContent.length > 8000
+        ? fileContent.slice(0, 8000) + '\n... (truncado)'
+        : fileContent;
       history.unshift({
         role: 'system',
-        content: `Estás editando el archivo ${activeTab.filePath} del proyecto ${projectName}.`,
+        content: `Estás trabajando en el proyecto ${projectName}. El archivo activo es ${activeTab.filePath}.\n\nContenido del archivo:\n\`\`\`\n${truncated}\n\`\`\`\n\nPuedes ver y analizar el contenido de este archivo.`,
       });
     }
 
