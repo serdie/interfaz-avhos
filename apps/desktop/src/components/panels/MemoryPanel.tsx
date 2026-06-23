@@ -1,106 +1,129 @@
-import { useState } from 'react';
 import { useAppStore } from '../../store/app-store.js';
-import { useTranslation, useTheme, Panel, PanelHeader, EmptyState, ScrollList, Badge, IconButton } from '@avhos/ui';
-
-const IMPORTANCE_COLORS: Record<string, string> = {
-  low: '#6e7681',
-  medium: '#2f81f7',
-  high: '#d29922',
-  critical: '#f85149',
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  preference: '#2f81f7',
-  project_fact: '#3fb950',
-  decision: '#a371f7',
-  summary: '#6e7681',
-  correction: '#f85149',
-  verified_outcome: '#3fb950',
-  pattern: '#d29922',
-  note: '#6e7681',
-};
+import { useTranslation, useTheme, Panel, PanelHeader } from '@avhos/ui';
 
 export function MemoryPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { memoryEntries } = useAppStore();
-  const [search, setSearch] = useState('');
+  const { workspaceRoot, activeTabId, openTabs, activityLog } = useAppStore();
 
-  const filtered = search
-    ? memoryEntries.filter(
-        (e) =>
-          e.title.toLowerCase().includes(search.toLowerCase()) ||
-          e.content.toLowerCase().includes(search.toLowerCase()) ||
-          e.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase())),
-      )
-    : memoryEntries;
+  const activeTab = openTabs.find((tab) => tab.id === activeTabId);
+  const projectName = workspaceRoot
+    ? workspaceRoot.split(/[\\/]/).pop()
+    : null;
+  const recentEvents = activityLog.slice(-5).reverse();
 
   return (
     <Panel>
-      <PanelHeader
-        title={t('memory.title')}
-        actions={<IconButton title={t('memory.newEntry')}>+</IconButton>}
-      />
-      <div style={{ padding: '8px', borderBottom: `1px solid ${theme.colors.border}` }}>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('memory.search')}
+      <PanelHeader title={t('memory.title')} />
+      <div
+        style={{
+          padding: '24px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          height: '100%',
+        }}
+      >
+        <div
           style={{
-            width: '100%',
-            background: theme.colors.bgTertiary,
-            border: `1px solid ${theme.colors.border}`,
-            borderRadius: '4px',
-            padding: '6px 8px',
+            fontSize: 'var(--font-base)',
             color: theme.colors.textPrimary,
-            fontSize: 'var(--font-sm)',
-            outline: 'none',
+            fontWeight: 600,
           }}
-        />
-      </div>
-      {filtered.length === 0 ? (
-        <EmptyState message={t('memory.empty')} />
-      ) : (
-        <ScrollList>
-          {filtered.map((entry) => (
-            <div
-              key={entry.id}
-              style={{
-                padding: '10px 12px',
-                borderBottom: `1px solid ${theme.colors.border}`,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                <span style={{ color: theme.colors.textPrimary, fontSize: 'var(--font-base)', fontWeight: 500 }}>
-                  {entry.title}
-                </span>
-              </div>
-              <div style={{ color: theme.colors.textSecondary, fontSize: 'var(--font-sm)', marginBottom: '6px' }}>
-                {entry.content}
-              </div>
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                <Badge color={TYPE_COLORS[entry.type]}>{t(`memory.type.${entry.type}`)}</Badge>
-                <Badge color={IMPORTANCE_COLORS[entry.importance]}>{t(`memory.importance.${entry.importance}`)}</Badge>
-                {entry.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      fontSize: 'var(--font-xs)',
-                      color: theme.colors.textMuted,
-                      padding: '1px 6px',
-                      background: theme.colors.bgTertiary,
-                      borderRadius: '3px',
-                    }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
+        >
+          Memoria no disponible
+        </div>
+
+        <div
+          style={{
+            fontSize: 'var(--font-sm)',
+            color: theme.colors.textMuted,
+            lineHeight: 1.6,
+          }}
+        >
+          La memoria persistente requiere un backend de almacenamiento
+          (SQLite, vector DB, etc.) para guardar y recuperar entradas
+          entre sesiones. Aún no está implementado.
+        </div>
+
+        <div
+          style={{
+            padding: '12px',
+            background: theme.colors.bgTertiary,
+            borderRadius: '6px',
+            border: `1px solid ${theme.colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: theme.colors.textSecondary }}>
+            Contexto actual
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {projectName
+              ? `Proyecto: ${projectName}`
+              : 'Sin proyecto abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {activeTab
+              ? `Archivo activo: ${activeTab.filePath.split(/[\\/]/).pop()}`
+              : 'Ningún archivo abierto'}
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            {`Pestañas abiertas: ${openTabs.length}`}
+          </div>
+        </div>
+
+        {recentEvents.length > 0 && (
+          <div
+            style={{
+              padding: '12px',
+              background: theme.colors.bgTertiary,
+              borderRadius: '6px',
+              border: `1px solid ${theme.colors.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: theme.colors.textSecondary }}>
+              Actividad reciente
             </div>
-          ))}
-        </ScrollList>
-      )}
+            {recentEvents.map((entry) => (
+              <div
+                key={entry.id}
+                style={{
+                  fontSize: 'var(--font-xs)',
+                  color: entry.level === 'error'
+                    ? theme.colors.danger
+                    : entry.level === 'warn'
+                      ? theme.colors.warning
+                      : theme.colors.textMuted,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={entry.message}
+              >
+                {entry.message}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div
+          style={{
+            fontSize: 'var(--font-xs)',
+            color: theme.colors.textMuted,
+            fontStyle: 'italic',
+          }}
+        >
+          Cuando el backend esté disponible, la memoria guardará
+          decisiones, preferencias y hechos del proyecto de forma
+          persistente entre sesiones.
+        </div>
+      </div>
     </Panel>
   );
 }
