@@ -8,7 +8,6 @@ import { setWorkspaceService } from './services/service-registry.js';
 import { createFsAdapter } from './services/fs-adapter-factory.js';
 import {
   createSeedWorkspace,
-  createSeedSessions,
   createSeedTasks,
   createSeedMemory,
   createSeedSkills,
@@ -52,7 +51,6 @@ function AppInner() {
       // Load seed data for non-explorer panels (still mock-backed)
       const ws = createSeedWorkspace();
       store.getState().setWorkspace(ws);
-      store.getState().setSessions(createSeedSessions(ws.id));
       store.getState().setTasks(createSeedTasks());
       store.getState().setMemoryEntries(createSeedMemory(ws.id));
       store.getState().setSkills(createSeedSkills());
@@ -65,10 +63,6 @@ function AppInner() {
       const profiles = createSeedProfiles();
       const defaultProfile = profiles.find((p) => p.isDefault);
       if (defaultProfile) store.getState().setActiveProfile(defaultProfile.id);
-
-      // Set first session as active
-      const sessions = createSeedSessions(ws.id);
-      if (sessions.length > 0) store.getState().setActiveSession(sessions[0].id);
 
       setReady(true);
     });
