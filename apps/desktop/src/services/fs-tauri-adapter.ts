@@ -66,9 +66,10 @@ export class TauriFsAdapter implements FilesystemAdapter {
       const content = await readTextFile(absolutePath);
       return { content, error: null };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al leer archivo';
       return {
         content: '',
-        error: err instanceof Error ? err.message : 'Error al leer archivo',
+        error: msg,
       };
     }
   }

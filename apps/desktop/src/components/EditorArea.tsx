@@ -68,7 +68,9 @@ export function EditorArea() {
 
     setTabContent(activeTab.id, { content: '', loading: true, error: null, loaded: false, saving: false, saveError: null });
 
-    const fullPath = `${workspaceRoot}/${activeTab.filePath}`.replace(/\\/g, '/');
+    const isWindows = workspaceRoot.includes('\\');
+    const sep = isWindows ? '\\' : '/';
+    const fullPath = `${workspaceRoot}${sep}${activeTab.filePath.replace(/\//g, sep)}`;
 
     getWorkspaceService()
       .loadFileContent(fullPath)
@@ -169,7 +171,9 @@ export function EditorArea() {
       saveError: null,
     });
 
-    const fullPath = `${workspaceRoot}/${activeTab.filePath}`.replace(/\\/g, '/');
+    const isWin = workspaceRoot.includes('\\');
+    const sepSave = isWin ? '\\' : '/';
+    const fullPath = `${workspaceRoot}${sepSave}${activeTab.filePath.replace(/\//g, sepSave)}`;
     const result = await getWorkspaceService().saveFileContent(fullPath, content);
 
     if (result.error) {
