@@ -122,6 +122,11 @@ interface AppStore {
   // File contents (real, loaded from disk via adapter)
   tabContents: Record<string, TabContentState>;
 
+  // Ollama real state
+  ollamaStatus: 'checking' | 'online' | 'offline';
+  ollamaModels: string[];
+  activeModel: string | null;
+
   // Actions
   setWorkspace: (ws: Workspace) => void;
   setProjects: (projects: Project[]) => void;
@@ -156,6 +161,9 @@ interface AppStore {
   setActiveProfile: (id: UUID) => void;
   setLogs: (logs: LogEntry[]) => void;
   setSettings: (settings: AppSetting[]) => void;
+  setOllamaStatus: (status: 'checking' | 'online' | 'offline') => void;
+  setOllamaModels: (models: string[]) => void;
+  setActiveModel: (model: string | null) => void;
   pushActivity: (category: ActivityCategory, level: ActivityLevel, message: string) => void;
   clearActivity: () => void;
 }
@@ -182,6 +190,9 @@ export const useAppStore = create<AppStore>((set) => ({
   activeProfileId: null,
   logs: [],
   settings: [],
+  ollamaStatus: 'checking',
+  ollamaModels: [],
+  activeModel: null,
   activityLog: [],
   fileTree: [],
   treeLoading: false,
@@ -269,6 +280,9 @@ export const useAppStore = create<AppStore>((set) => ({
   setActiveProfile: (id) => set({ activeProfileId: id }),
   setLogs: (logs) => set({ logs }),
   setSettings: (settings) => set({ settings }),
+  setOllamaStatus: (status) => set({ ollamaStatus: status }),
+  setOllamaModels: (models) => set({ ollamaModels: models }),
+  setActiveModel: (model) => set({ activeModel: model }),
   pushActivity: (category, level, message) =>
     set((s) => ({
       activityLog: [

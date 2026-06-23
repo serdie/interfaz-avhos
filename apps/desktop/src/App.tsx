@@ -6,6 +6,7 @@ import { injectGlobalCSS } from './styles/global.css.js';
 import { WorkspaceService } from './services/workspace-service.js';
 import { setWorkspaceService } from './services/service-registry.js';
 import { createFsAdapter } from './services/fs-adapter-factory.js';
+import { detectOllama } from './services/ollama-service.js';
 import { IDELayout } from './components/IDELayout.js';
 
 function AppInner() {
@@ -37,6 +38,9 @@ function AppInner() {
         store.getState().setTreeLoading(false);
         store.getState().pushActivity('workspace', 'error', `Error al abrir proyecto: ${err instanceof Error ? err.message : 'desconocido'}`);
       }
+
+      // Detect Ollama and list real models
+      detectOllama();
 
       setReady(true);
     });

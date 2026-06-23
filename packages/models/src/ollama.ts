@@ -2,59 +2,99 @@ import type { ModelProvider, ModelRequest, ModelResponse, ModelStreamChunk, UUID
 import type { ModelProviderClient } from './provider.js';
 
 /**
- * Ollama provider client — designed for local Ollama API.
- * PLACEHOLDER: HTTP calls are stubbed. When ready, use fetch() against
- * the Ollama REST API (default: http://localhost:11434).
- *
- * Architecture is real; network calls are not yet wired.
+ * Ollama provider client — real HTTP calls against local Ollama API.
+ * Default endpoint: http://localhost:11434
  */
 export class OllamaProviderClient implements ModelProviderClient {
   readonly providerId: UUID;
   readonly providerType = 'ollama';
-  private _baseUrl: string;
+  private baseUrl: string;
 
   constructor(provider: ModelProvider) {
     this.providerId = provider.id;
-    this._baseUrl = provider.baseUrl || 'http://localhost:11434';
-    void this._baseUrl;
+    this.baseUrl = (provider.baseUrl || 'http://localhost:11434').replace(/\/$/, '');
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(3000) });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 
   async listModels(): Promise<string[]> {
-    // PLACEHOLDER: GET /api/tags
-    // const res = await fetch(`${this.baseUrl}/api/tags`);
-    // const data = await res.json();
-    // return data.models.map((m: { name: string }) => m.name);
-    return ['llama3.1:8b', 'qwen2.5-coder:7b', 'deepseek-coder:6.7b'];
+    const res = await fetch(`${this.baseUrl}/api/tags`);
+    if (!res.ok) throw new Error(`Ollama respondió ${res.status}`);
+    const data = await res.json();
+    return (data.models as { name: string }[]).map((m) => m.name);
   }
 
   async complete(request: ModelRequest): Promise<ModelResponse> {
-    // PLACEHOLDER: POST /api/chat
-    // const res = await fetch(`${this.baseUrl}/api/chat`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ model, messages: request.messages, stream: false }),
-    // });
-    // return parseResponse(res, request.profileId);
+    const model = request.modelId || request.profileId;
+    const res = await fetch(`${this.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: request.messages,
+        stream: false,
+        options: request.temperature != null ? { temperature: request.temperature } : undefined,
+      }),
+    });
+    if (!res.ok) throw new Error(`Ollama respondió ${res.status}`);
+    const data = await res.json();
     return {
       profileId: request.profileId,
-      content: '[Ollama placeholder] Respuesta no implementada — configura el backend para usar Ollama.',
+      content: data.message?.content ?? '',
       finishReason: 'stop',
-      usage: null,
-      raw: null,
+      usage: data.eval_count ? { promptTokens: data.prompt_eval_count ?? 0, completionTokens: data.eval_count, totalTokens: (data.prompt_eval_count ?? 0) + data.eval_count } : null,
+      raw: data,
     };
   }
 
   async *stream(request: ModelRequest): AsyncGenerator<ModelStreamChunk> {
-    // PLACEHOLDER: POST /api/chat with stream: true
-    void request;
-    yield {
-      delta: '[Ollama placeholder] Streaming no implementado.',
-      done: true,
-    };
-  }
+    const model = request.modelId || request.profileId;
+    const res = await fetch(`${this.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: request.messages,
+        stream: true,
+        options: request.temperature != null ? { temperature: request.temperature } : undefined,
+      }),
+    });
+    if (!res.ok || !res.body) throw new Error(`Ollama respondió ${res.status}`);
 
-  async healthCheck(): Promise<boolean> {
-    // PLACEHOLDER: GET /api/tags and check 200
-    return false;
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const chunk = JSON.parse(line);
+          if (chunk.message?.content) {
+            yield { delta: chunk.message.content, done: false };
+          }
+          if (chunk.done) {
+            yield { delta: '', done: true };
+            return;
+          }
+        } catch {
+          // partial JSON, skip
+        }
+      }
+    }
   }
 }

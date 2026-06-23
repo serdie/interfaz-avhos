@@ -36,6 +36,7 @@ export interface ModelProfile {
 /** Normalized request sent to any provider. */
 export interface ModelRequest {
   profileId: UUID;
+  modelId?: string;
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
   temperature?: number;
   maxTokens?: number;
