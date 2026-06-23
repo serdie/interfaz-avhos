@@ -34,7 +34,6 @@ export function ExplorerPanel() {
     treeLoading,
     treeError,
     workspaceRoot,
-    workspace,
     openTab,
     setFileTree,
     setTreeLoading,
@@ -147,9 +146,9 @@ export function ExplorerPanel() {
   }, [expandedPaths, workspaceRoot, updateNode]);
 
   const handleOpenFile = (node: FileTreeNode) => {
-    if (!workspace) return;
+    if (!workspaceRoot) return;
     const lang = EXTENSION_LANGUAGES[node.extension ?? ''] ?? 'plaintext';
-    openTab(createFileTab(workspace.id, node.path, lang));
+    openTab(createFileTab(workspaceRoot as unknown as import('@avhos/core').UUID, node.path, lang));
     useAppStore.getState().pushActivity('explorer', 'info', `Archivo abierto: ${node.name}`);
   };
 
