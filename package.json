@@ -1,0 +1,26 @@
+{
+  "name": "avhos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AVHOS — Entorno de programación nativo IA para escritorio",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @avhos/desktop dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "typecheck": "pnpm -r typecheck",
+    "tauri:dev": "pnpm --filter @avhos/desktop tauri dev",
+    "tauri:build": "pnpm --filter @avhos/desktop tauri build"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

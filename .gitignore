@@ -1,0 +1,44 @@
+# ── Dependencias ──
+node_modules/
+.pnpm-store/
+
+# ── Outputs de build ──
+dist/
+build/
+.next/
+.turbo/
+.tauri/
+
+# ── Tauri / Rust ──
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
+# ── Cobertura y cachés ──
+coverage/
+.cache/
+
+# ── Variables de entorno ──
+.env
+.env.local
+.env.*.local
+
+# ── Logs ──
+*.log
+logs/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ── IDE / Editor ──
+.idea/
+.vscode/
+*.suo
+*.user
+*.swp
+*.swo
+*~
+
+# ── Source maps en producción ──
+*.map
