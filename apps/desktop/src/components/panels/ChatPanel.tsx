@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/app-store.js';
-import { useTranslation, useTheme, Panel, PanelHeader, ScrollList, Badge } from '@avhos/ui';
+import { useTranslation, useTheme, Panel, PanelHeader, ScrollList, Badge, IconButton } from '@avhos/ui';
 import { streamChat } from '../../services/ollama-service.js';
 
 interface ChatMsg {
@@ -12,10 +12,11 @@ interface ChatMsg {
 export function ChatPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { ollamaStatus, activeModel, workspaceRoot, activeTabId, openTabs } = useAppStore();
+  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs } = useAppStore();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeTab = openTabs.find((tab) => tab.id === activeTabId);
@@ -23,7 +24,8 @@ export function ChatPanel() {
     ? workspaceRoot.split(/[\\/]/).pop()
     : null;
 
-  const canChat = ollamaStatus === 'online' && !!activeModel && !loading;
+  const modelGone = ollamaStatus === 'online' && activeModel && !ollamaModels.includes(activeModel);
+  const canChat = ollamaStatus === 'online' && !!activeModel && !modelGone && !loading;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -31,11 +33,26 @@ export function ChatPanel() {
     }
   }, [messages]);
 
+  const handleCancel = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setLoading(false);
+  };
+
+  const handleClear = () => {
+    setMessages([]);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !activeModel || !canChat) return;
     const content = input.trim();
     setInput('');
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const userMsg: ChatMsg = { id: crypto.randomUUID(), role: 'user', content };
     const assistantId = crypto.randomUUID();
@@ -62,19 +79,30 @@ export function ChatPanel() {
             m.id === assistantId ? { ...m, content: m.content + delta } : m,
           ),
         );
-      });
+      }, controller.signal);
       useAppStore.getState().pushActivity('editor', 'info', `Chat: respuesta de ${activeModel}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error desconocido';
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, role: 'error', content: `Error: ${msg}` }
-            : m,
-        ),
-      );
-      useAppStore.getState().pushActivity('editor', 'error', `Chat: ${msg}`);
+      if (controller.signal.aborted) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId && m.content === ''
+              ? { ...m, role: 'error', content: 'Generación cancelada' }
+              : m,
+          ),
+        );
+      } else {
+        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, role: 'error', content: `Error: ${msg}` }
+              : m,
+          ),
+        );
+        useAppStore.getState().pushActivity('editor', 'error', `Chat: ${msg}`);
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
   };
@@ -84,9 +112,16 @@ export function ChatPanel() {
       <PanelHeader
         title={t('chat.title')}
         actions={
-          activeModel ? (
-            <Badge color={theme.colors.accent}>{activeModel}</Badge>
-          ) : undefined
+          <>
+            {activeModel && !modelGone && (
+              <Badge color={theme.colors.accent}>{activeModel}</Badge>
+            )}
+            {messages.length > 0 && !loading && (
+              <IconButton title="Limpiar conversación" onClick={handleClear}>
+                ✕
+              </IconButton>
+            )}
+          </>
         }
       />
 
@@ -117,7 +152,18 @@ export function ChatPanel() {
         </div>
       )}
 
-      {ollamaStatus === 'online' && activeModel && (
+      {modelGone && (
+        <div style={{ padding: '24px 16px' }}>
+          <div style={{ fontSize: 'var(--font-sm)', color: theme.colors.warning, lineHeight: 1.6, marginBottom: '8px' }}>
+            El modelo «{activeModel}» ya no está disponible en Ollama.
+          </div>
+          <div style={{ fontSize: 'var(--font-xs)', color: theme.colors.textMuted }}>
+            Selecciona otro modelo en el panel Models para continuar.
+          </div>
+        </div>
+      )}
+
+      {ollamaStatus === 'online' && activeModel && !modelGone && (
         <>
           <ScrollList>
             <div ref={scrollRef} style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -177,21 +223,38 @@ export function ChatPanel() {
                 opacity: loading ? 0.6 : 1,
               }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!canChat}
-              style={{
-                background: canChat ? theme.colors.accent : theme.colors.bgTertiary,
-                color: canChat ? '#fff' : theme.colors.textMuted,
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 16px',
-                cursor: canChat ? 'pointer' : 'not-allowed',
-                fontSize: 'var(--font-base)',
-              }}
-            >
-              {t('chat.send')}
-            </button>
+            {loading ? (
+              <button
+                onClick={handleCancel}
+                style={{
+                  background: theme.colors.danger,
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: 'var(--font-base)',
+                }}
+              >
+                ⏹
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!canChat}
+                style={{
+                  background: canChat ? theme.colors.accent : theme.colors.bgTertiary,
+                  color: canChat ? '#fff' : theme.colors.textMuted,
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  cursor: canChat ? 'pointer' : 'not-allowed',
+                  fontSize: 'var(--font-base)',
+                }}
+              >
+                {t('chat.send')}
+              </button>
+            )}
           </div>
         </>
       )}

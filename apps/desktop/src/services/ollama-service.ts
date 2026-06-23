@@ -49,11 +49,13 @@ export async function streamChat(
   model: string,
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
   onChunk: (delta: string) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, messages, stream: true }),
+    signal,
   });
 
   if (!res.ok || !res.body) {
