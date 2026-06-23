@@ -16,7 +16,6 @@ import {
   createSeedProviders,
   createSeedProfiles,
   createSeedSettings,
-  createSeedLogs,
 } from './data/seed.js';
 import { IDELayout } from './components/IDELayout.js';
 
@@ -61,7 +60,6 @@ function AppInner() {
       store.getState().setProviders(createSeedProviders());
       store.getState().setProfiles(createSeedProfiles());
       store.getState().setSettings(createSeedSettings());
-      store.getState().setLogs(createSeedLogs());
 
       // Set default profile
       const profiles = createSeedProfiles();
