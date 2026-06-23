@@ -127,6 +127,10 @@ interface AppStore {
   ollamaModels: string[];
   activeModel: string | null;
 
+  // Project inventory (real recursive scan)
+  projectInventory: string[];
+  inventoryLoading: boolean;
+
   // Actions
   setWorkspace: (ws: Workspace) => void;
   setProjects: (projects: Project[]) => void;
@@ -164,6 +168,8 @@ interface AppStore {
   setOllamaStatus: (status: 'checking' | 'online' | 'offline') => void;
   setOllamaModels: (models: string[]) => void;
   setActiveModel: (model: string | null) => void;
+  setProjectInventory: (files: string[]) => void;
+  setInventoryLoading: (loading: boolean) => void;
   pushActivity: (category: ActivityCategory, level: ActivityLevel, message: string) => void;
   clearActivity: () => void;
 }
@@ -193,6 +199,8 @@ export const useAppStore = create<AppStore>((set) => ({
   ollamaStatus: 'checking',
   ollamaModels: [],
   activeModel: null,
+  projectInventory: [],
+  inventoryLoading: false,
   activityLog: [],
   fileTree: [],
   treeLoading: false,
@@ -283,6 +291,8 @@ export const useAppStore = create<AppStore>((set) => ({
   setOllamaStatus: (status) => set({ ollamaStatus: status }),
   setOllamaModels: (models) => set({ ollamaModels: models }),
   setActiveModel: (model) => set({ activeModel: model }),
+  setProjectInventory: (files) => set({ projectInventory: files }),
+  setInventoryLoading: (loading) => set({ inventoryLoading: loading }),
   pushActivity: (category, level, message) =>
     set((s) => ({
       activityLog: [

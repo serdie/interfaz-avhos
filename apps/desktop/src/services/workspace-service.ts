@@ -54,6 +54,36 @@ export class WorkspaceService {
     return this.fs.readFile(absolutePath);
   }
 
+  /** Recursively scan the project and return a flat list of file paths (relative to root). */
+  async loadFileInventory(rootPath: string, maxDepth = 10): Promise<string[]> {
+    const results: string[] = [];
+    await this.scanDir(rootPath, rootPath, 0, maxDepth, results);
+    return results;
+  }
+
+  private async scanDir(
+    absolutePath: string,
+    rootPath: string,
+    depth: number,
+    maxDepth: number,
+    results: string[],
+  ): Promise<void> {
+    if (depth >= maxDepth) return;
+    const result = await this.fs.readDir(absolutePath);
+    if (result.error) return;
+
+    for (const entry of result.entries) {
+      if (this.excluded.has(entry.name)) continue;
+
+      if (entry.isDirectory) {
+        const childAbs = this.joinPath(rootPath, entry.path);
+        await this.scanDir(childAbs, rootPath, depth + 1, maxDepth, results);
+      } else {
+        results.push(entry.path);
+      }
+    }
+  }
+
   /** Write real content to a file on disk via the adapter. */
   async saveFileContent(absolutePath: string, content: string): Promise<{ error: string | null }> {
     return this.fs.writeFile(absolutePath, content);

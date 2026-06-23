@@ -33,6 +33,18 @@ function AppInner() {
         store.getState().setFileTree(rootNodes);
         store.getState().setTreeLoading(false);
         store.getState().pushActivity('workspace', 'info', `Árbol cargado: ${rootNodes.length} elementos en raíz`);
+
+        // Load real project inventory (recursive scan)
+        store.getState().setInventoryLoading(true);
+        wsService.loadFileInventory(rootPath)
+          .then((files) => {
+            store.getState().setProjectInventory(files);
+            store.getState().setInventoryLoading(false);
+            store.getState().pushActivity('workspace', 'info', `Inventario del proyecto: ${files.length} archivos`);
+          })
+          .catch(() => {
+            store.getState().setInventoryLoading(false);
+          });
       } catch (err) {
         store.getState().setTreeError(err instanceof Error ? err.message : 'Failed to init filesystem');
         store.getState().setTreeLoading(false);

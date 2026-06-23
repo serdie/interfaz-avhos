@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/app-store.js';
 import { useTranslation, useTheme, Panel, PanelHeader, ScrollList, Badge, IconButton } from '@avhos/ui';
 import { streamChat } from '../../services/ollama-service.js';
-import type { FileTreeNode } from '@avhos/core';
 
 interface ChatMsg {
   id: string;
@@ -10,22 +9,10 @@ interface ChatMsg {
   content: string;
 }
 
-function flattenFileTree(nodes: FileTreeNode[], depth = 0): string[] {
-  const result: string[] = [];
-  for (const node of nodes) {
-    if (node.type === 'file') {
-      result.push(node.path);
-    } else if (node.type === 'directory' && node.children) {
-      result.push(...flattenFileTree(node.children, depth + 1));
-    }
-  }
-  return result;
-}
-
 export function ChatPanel() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs, tabContents, fileTree } = useAppStore();
+  const { ollamaStatus, activeModel, ollamaModels, workspaceRoot, activeTabId, openTabs, tabContents, projectInventory, inventoryLoading } = useAppStore();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,16 +27,16 @@ export function ChatPanel() {
   const modelGone = ollamaStatus === 'online' && activeModel && !ollamaModels.includes(activeModel);
   const canChat = ollamaStatus === 'online' && !!activeModel && !modelGone && !loading;
 
-  const projectFiles = useMemo(() => flattenFileTree(fileTree), [fileTree]);
   const openFileList = openTabs.map((tab) => tab.filePath);
 
   const contextLabel = useMemo(() => {
+    if (inventoryLoading) return 'Contexto: escaneando proyecto...';
     const parts: string[] = [];
-    parts.push(`${projectFiles.length} archivos del árbol`);
+    parts.push(`${projectInventory.length} archivos del proyecto`);
     if (openFileList.length > 0) parts.push(`${openFileList.length} abiertos`);
     if (activeTab) parts.push('archivo activo');
     return `Contexto: ${parts.join(' + ')}`;
-  }, [projectFiles.length, openFileList.length, activeTab]);
+  }, [projectInventory.length, inventoryLoading, openFileList.length, activeTab]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -75,12 +62,14 @@ export function ChatPanel() {
 
     sections.push(`Proyecto: ${projectName} (${workspaceRoot})`);
 
-    if (projectFiles.length > 0) {
-      const fileList = projectFiles.slice(0, 200).join('\n');
-      const truncatedNote = projectFiles.length > 200 ? `\n... (${projectFiles.length - 200} archivos más no listados)` : '';
-      sections.push(`Árbol de archivos del proyecto (${projectFiles.length} archivos cargados en el explorer):\n${fileList}${truncatedNote}`);
+    if (projectInventory.length > 0) {
+      const fileList = projectInventory.slice(0, 200).join('\n');
+      const truncatedNote = projectInventory.length > 200 ? `\n... (${projectInventory.length - 200} archivos más no listados)` : '';
+      sections.push(`Inventario real del proyecto (${projectInventory.length} archivos, excluyendo node_modules, dist, .git, target):\n${fileList}${truncatedNote}`);
+    } else if (inventoryLoading) {
+      sections.push('Inventario del proyecto: escaneando...');
     } else {
-      sections.push('Árbol de archivos: (vacío — expande carpetas en el Explorer para cargar archivos)');
+      sections.push('Inventario del proyecto: (vacío o no disponible)');
     }
 
     if (openFileList.length > 0) {
