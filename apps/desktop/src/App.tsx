@@ -8,7 +8,6 @@ import { setWorkspaceService } from './services/service-registry.js';
 import { createFsAdapter } from './services/fs-adapter-factory.js';
 import {
   createSeedWorkspace,
-  createSeedTasks,
   createSeedMemory,
   createSeedSkills,
   createSeedMcpServers,
@@ -51,7 +50,6 @@ function AppInner() {
       // Load seed data for non-explorer panels (still mock-backed)
       const ws = createSeedWorkspace();
       store.getState().setWorkspace(ws);
-      store.getState().setTasks(createSeedTasks());
       store.getState().setMemoryEntries(createSeedMemory(ws.id));
       store.getState().setSkills(createSeedSkills());
       store.getState().setMcpServers(createSeedMcpServers());
