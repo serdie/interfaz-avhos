@@ -205,10 +205,12 @@ export const esES: TranslationResource = {
   'settings.save': 'Guardar ajustes',
   'settings.saved': 'Ajustes guardados',
 
-  // Terminal
+  // Bottom panel
+  'activity.title': 'Actividad',
+  'activity.empty': 'Sin actividad registrada',
   'terminal.title': 'Terminal',
-  'terminal.empty': 'Terminal inactivo',
-  'terminal.placeholder': 'Escribe un comando...',
+  'terminal.notAvailable': 'Terminal no disponible',
+  'terminal.notAvailableDesc': 'El terminal integrado requiere integración con PTY del sistema. Aún no está implementado.',
 
   // Status bar
   'status.ready': 'Listo',

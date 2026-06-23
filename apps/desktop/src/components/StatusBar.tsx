@@ -113,7 +113,7 @@ export function StatusBar() {
         style={{ cursor: 'pointer', opacity: 0.8 }}
         onClick={toggleBottomPanel}
       >
-        {t('terminal.title')}
+        {t('activity.title')}
       </span>
       <span
         style={{ cursor: 'pointer', opacity: 0.8 }}

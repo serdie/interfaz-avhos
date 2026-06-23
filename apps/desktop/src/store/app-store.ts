@@ -129,6 +129,7 @@ interface AppStore {
   tabContents: Record<string, TabContentState>;
 
   // Ollama real state
+  ollamaUrl: string;
   ollamaStatus: 'checking' | 'online' | 'offline';
   ollamaModels: string[];
   activeModel: string | null;
@@ -176,6 +177,7 @@ interface AppStore {
   setActiveProfile: (id: UUID) => void;
   setLogs: (logs: LogEntry[]) => void;
   setSettings: (settings: AppSetting[]) => void;
+  setOllamaUrl: (url: string) => void;
   setOllamaStatus: (status: 'checking' | 'online' | 'offline') => void;
   setOllamaModels: (models: string[]) => void;
   setActiveModel: (model: string | null) => void;
@@ -213,6 +215,7 @@ export const useAppStore = create<AppStore>((set) => ({
   activeProfileId: null,
   logs: [],
   settings: [],
+  ollamaUrl: (() => { try { return localStorage.getItem('avhos:ollamaUrl') ?? 'http://localhost:11434'; } catch { return 'http://localhost:11434'; } })(),
   ollamaStatus: 'checking',
   ollamaModels: [],
   activeModel: null,
@@ -308,6 +311,10 @@ export const useAppStore = create<AppStore>((set) => ({
   setActiveProfile: (id) => set({ activeProfileId: id }),
   setLogs: (logs) => set({ logs }),
   setSettings: (settings) => set({ settings }),
+  setOllamaUrl: (url) => {
+    try { localStorage.setItem('avhos:ollamaUrl', url); } catch { /* ignore */ }
+    set({ ollamaUrl: url });
+  },
   setOllamaStatus: (status) => set({ ollamaStatus: status }),
   setOllamaModels: (models) => set({ ollamaModels: models }),
   setActiveModel: (model) => set({ activeModel: model }),

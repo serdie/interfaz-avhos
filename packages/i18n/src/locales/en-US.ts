@@ -52,8 +52,11 @@ export const enUS: TranslationResource = {
 
   'settings.title': 'Settings',
 
+  'activity.title': 'Activity',
+  'activity.empty': 'No activity recorded',
   'terminal.title': 'Terminal',
-  'terminal.empty': 'Terminal idle',
+  'terminal.notAvailable': 'Terminal not available',
+  'terminal.notAvailableDesc': 'The integrated terminal requires PTY system integration. Not yet implemented.',
 
   'status.ready': 'Ready',
 

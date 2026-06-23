@@ -3,6 +3,21 @@ import { useAppStore } from '../../store/app-store.js';
 import type { ChatMsg } from '../../store/app-store.js';
 import { useTranslation, useTheme, Panel, PanelHeader, ScrollList, Badge, IconButton } from '@avhos/ui';
 import { streamChat } from '../../services/ollama-service.js';
+import { getWorkspaceService } from '../../services/service-registry.js';
+
+function findMentionedFiles(message: string, inventory: string[]): string[] {
+  const lower = message.toLowerCase();
+  const matches: string[] = [];
+  for (const filePath of inventory) {
+    const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+    const lowerName = fileName.toLowerCase();
+    const lowerPath = filePath.toLowerCase();
+    if (lower.includes(lowerName) || lower.includes(lowerPath)) {
+      matches.push(filePath);
+    }
+  }
+  return matches.slice(0, 5);
+}
 
 export function ChatPanel() {
   const { t } = useTranslation();
@@ -54,7 +69,7 @@ export function ChatPanel() {
     clearChatMessages();
   };
 
-  const buildSystemPrompt = (): string => {
+  const buildSystemPrompt = async (userMessage: string): Promise<string> => {
     if (!workspaceRoot) return '';
     const sections: string[] = [];
 
@@ -86,6 +101,37 @@ export function ChatPanel() {
       sections.push('Archivo activo: ninguno');
     }
 
+    // Detectar archivos mencionados por el usuario y leer su contenido
+    const mentionedFiles = findMentionedFiles(userMessage, projectInventory);
+    if (mentionedFiles.length > 0) {
+      const ws = getWorkspaceService();
+      const isWindows = workspaceRoot.includes('\\');
+      const sep = isWindows ? '\\' : '/';
+      const fileContents: string[] = [];
+      let readCount = 0;
+      for (const filePath of mentionedFiles) {
+        if (readCount >= 3) break;
+        // Saltar si ya es el archivo activo (ya está incluido)
+        if (activeTab && activeTab.filePath === filePath) continue;
+        const fullPath = `${workspaceRoot}${sep}${filePath.replace(/\//g, sep)}`;
+        try {
+          const result = await ws.loadFileContent(fullPath);
+          if (!result.error && result.content) {
+            const truncatedContent = result.content.length > 4000
+              ? result.content.slice(0, 4000) + '\n... (truncado)'
+              : result.content;
+            fileContents.push(`### ${filePath}\n\`\`\`\n${truncatedContent}\n\`\`\``);
+            readCount++;
+          }
+        } catch {
+          // ignore read errors
+        }
+      }
+      if (fileContents.length > 0) {
+        sections.push(`Archivos adicionales mencionados (${fileContents.length}):\n${fileContents.join('\n\n')}`);
+      }
+    }
+
     return sections.join('\n\n');
   };
 
@@ -109,7 +155,7 @@ export function ChatPanel() {
         content: m.content,
       }));
 
-    const systemPrompt = buildSystemPrompt();
+    const systemPrompt = await buildSystemPrompt(content);
     if (systemPrompt) {
       history.unshift({
         role: 'system',

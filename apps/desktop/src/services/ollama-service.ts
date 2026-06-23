@@ -1,17 +1,16 @@
 import { useAppStore } from '../store/app-store.js';
 
-const OLLAMA_URL = 'http://localhost:11434';
-
 /**
  * Detecta si Ollama está disponible y lista los modelos reales.
  * Actualiza el store con el estado y los modelos encontrados.
  */
 export async function detectOllama(): Promise<void> {
   const store = useAppStore.getState();
+  const url = store.ollamaUrl;
   store.setOllamaStatus('checking');
 
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${url}/api/tags`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) {
       store.setOllamaStatus('offline');
       store.setOllamaModels([]);
@@ -37,7 +36,7 @@ export async function detectOllama(): Promise<void> {
   } catch {
     store.setOllamaStatus('offline');
     store.setOllamaModels([]);
-    store.pushActivity('system', 'info', 'Ollama no detectado en localhost:11434');
+    store.pushActivity('system', 'info', `Ollama no detectado en ${url}`);
   }
 }
 
@@ -51,7 +50,8 @@ export async function streamChat(
   onChunk: (delta: string) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+  const url = useAppStore.getState().ollamaUrl;
+  const res = await fetch(`${url}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, messages, stream: true }),
